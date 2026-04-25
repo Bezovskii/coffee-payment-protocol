@@ -1,31 +1,49 @@
+# CoffeeShop Smart Contract System
 
 ## Overview
 
-This project implements two blockchain-based payment models for a coffee shop using Solidity smart contracts:
+A Solidity-based smart contract system implementing two payment architectures: direct settlement and escrow-based transactions.
 
-- CoffeeShop (MoneyFlow): Direct payment from customer to store wallet
-- CoffeeShopEscrow: Payment is held in the smart contract and can be withdrawn by the owner or refunded to the customer
+The project demonstrates **state-driven contract design**, **secure token handling**, and **full test coverage including invariants**, ensuring correctness across all execution paths.
+
+---
+
+## Design Approach
+
+This system compares two transaction models:
+
+- **MoneyFlow (Direct Payment)**  
+  Optimized for speed and simplicity — funds are transferred immediately.
+
+- **Escrow Model**  
+  Designed for trustless environments — funds are locked and released based on conditions.
+
+### Key Considerations
+- Prevent invalid state transitions  
+- Ensure payment integrity before state updates  
+- Handle ERC20 edge cases (false returns / failed transfers)  
+- Guarantee system correctness using invariant testing  
 
 ---
 
 ## Contracts
 
 ### CoffeeShop.sol (MoneyFlow)
-- Direct payment model
-- Customer pays directly to store wallet
-- Immediate transaction settlement
+- Direct payment model  
+- Immediate transfer to store wallet  
+- Minimal state complexity  
 
 ### CoffeeShopEscrow.sol
-- Escrow-based payment model
-- Funds are held in contract
-- Owner can withdraw funds
-- Customer can request refund
+- Escrow-based payment model  
+- Funds are held in contract  
+- Controlled **withdrawal (owner)** and **refund (customer)**  
+- State-based lifecycle enforcement  
 
 ### MockUSDT.sol
-- ERC20 mock token used for testing payments
+- ERC20 mock token (6 decimals) used for realistic testing  
 
 ### BadTokenReturnFalse.sol
-- Mock token used to simulate failed transfers
+- Simulates broken ERC20 behavior (transfer returning false)  
 
 ---
 
@@ -33,43 +51,42 @@ This project implements two blockchain-based payment models for a coffee shop us
 
 ### MoneyFlow (Direct Payment)
 
-Customer → Store Wallet
+Customer → Store Wallet  
 
-- Payment is transferred instantly
-- No intermediate state
+- Immediate settlement  
+- No intermediate state  
 
 ---
 
 ### Escrow Model
 
-Customer → Smart Contract
+Customer → Smart Contract  
 
 Then:
-
-- Owner withdraws → Store Wallet
-- Customer refunds → Customer
+- Owner withdraws → Store Wallet  
+- Customer refunds → Customer  
 
 ---
 
 ## Test Coverage
 
-The system is fully tested with:
+The system is fully tested using **Hardhat**:
 
-- Constructor validation
-- Admin (onlyOwner) permissions
-- Item creation and updates
-- Buy logic
-- Withdraw logic
-- Refund logic
-- State transition testing
-- Invariant testing
+- Constructor validation  
+- Access control (onlyOwner)  
+- Item creation and updates  
+- Buy logic  
+- Withdrawal logic  
+- Refund logic  
+- State transition testing  
+- Invariant testing  
 
 All tests are passing.
 
 ---
 
 ## Project Structure
-
+```
 contracts/
   CoffeeShop.sol
   CoffeeShopEscrow.sol
@@ -83,30 +100,32 @@ test/
 scripts/
   deployMoneyFlow.js
   deployEscrow.js
----
+```
 
 ## How to Run
-
+```
 npm install
 npx hardhat compile
 npx hardhat test
----
+```
 
 ## Deployment
-
+```
 npx hardhat run scripts/deployMoneyFlow.js
 npx hardhat run scripts/deployEscrow.js
----
+```
 
 ## Tech Stack
 
-- Solidity
-- Hardhat
-- Ethers.js
-- JavaScript
+- Solidity  
+- Hardhat  
+- Ethers.js  
+- JavaScript  
 
 ---
 
 ## Future Work
 
-- AI-assisted escrow dispute resolution using off-chain automation, where an AI agent analyzes dispute context and suggests whether funds should be released, refunded, or escalated for human review.
+- AI-assisted escrow dispute resolution using off-chain automation  
+- Integration with oracle-based dispute signals  
+- Hybrid smart contract + off-chain decision system for conflict resolution
