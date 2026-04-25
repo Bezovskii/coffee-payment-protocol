@@ -3,11 +3,22 @@ pragma solidity ^0.8.20;
 
 interface IERC20 {
     function balanceOf(address owner) external view returns (uint256);
-    function allowance(address owner, address spender) external view returns (uint256);
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
+
+    function allowance(
+        address owner,
+        address spender
+    ) external view returns (uint256);
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
+
+    function transfer(address to, uint256 value) external returns (bool);
 }
 
-contract CoffeeShop {
+contract CoffeeShopEscrow {
     event OrderPlaced(
         uint256 indexed orderId,
         address indexed customer,
@@ -16,10 +27,35 @@ contract CoffeeShop {
         uint256 total
     );
 
-    event ItemCreated(uint256 indexed itemId, string name, uint256 price, bool active);
-    event ItemUpdated(uint256 indexed itemId, string name, uint256 oldPrice, uint256 newPrice, bool active);
+    event OrderWithdrawn(
+        uint256 indexed orderId,
+        address indexed to,
+        uint256 total
+    );
+    event OrderRefunded(
+        uint256 indexed orderId,
+        address indexed customer,
+        uint256 total
+    );
+
+    event ItemCreated(
+        uint256 indexed itemId,
+        string name,
+        uint256 price,
+        bool active
+    );
+    event ItemUpdated(
+        uint256 indexed itemId,
+        string name,
+        uint256 oldPrice,
+        uint256 newPrice,
+        bool active
+    );
     event ItemStatusUpdated(uint256 indexed itemId, bool active);
-    event StoreWalletUpdated(address indexed oldWallet, address indexed newWallet);
+    event StoreWalletUpdated(
+        address indexed oldWallet,
+        address indexed newWallet
+    );
     event SalesPaused(bool paused);
 
     address public immutable owner;
@@ -30,6 +66,21 @@ contract CoffeeShop {
     uint256 public nextItemId = 1;
     bool public paused;
 
+    enum Status {
+        NONE,
+        PAID,
+        WITHDRAWN,
+        REFUNDED
+    }
+
+    struct Order {
+        address customer;
+        uint256 itemId;
+        uint256 qty;
+        uint256 total;
+        Status status;
+    }
+
     struct Item {
         string name;
         uint256 price;
@@ -38,6 +89,7 @@ contract CoffeeShop {
     }
 
     mapping(uint256 => Item) private items;
+    mapping(uint256 => Order) public orders;
 
     modifier onlyOwner() {
         require(msg.sender == owner, "not owner");
@@ -137,7 +189,11 @@ contract CoffeeShop {
 
     function getItem(
         uint256 itemId
-    ) external view returns (string memory name, uint256 price, bool active, bool exists) {
+    )
+        external
+        view
+        returns (string memory name, uint256 price, bool active, bool exists)
+    {
         Item storage it = items[itemId];
         return (it.name, it.price, it.active, it.exists);
     }
@@ -157,12 +213,51 @@ contract CoffeeShop {
         address customer = msg.sender;
 
         require(usdt.balanceOf(customer) >= total, "not enough USDT");
-        require(usdt.allowance(customer, address(this)) >= total, "allowance too low");
+        require(
+            usdt.allowance(customer, address(this)) >= total,
+            "allowance too low"
+        );
 
-        bool ok = usdt.transferFrom(customer, storeWallet, total);
+        bool ok = usdt.transferFrom(customer, address(this), total);
         require(ok, "transfer failed");
 
         uint256 orderId = nextOrderId++;
+
+        orders[orderId] = Order({
+            customer: customer,
+            itemId: itemId,
+            qty: qty,
+            total: total,
+            status: Status.PAID
+        });
+
         emit OrderPlaced(orderId, customer, itemId, qty, total);
+    }
+
+    function withdraw(uint256 orderId) external onlyOwner {
+        Order storage o = orders[orderId];
+
+        require(o.status == Status.PAID, "order not withdrawable");
+
+        o.status = Status.WITHDRAWN;
+
+        bool ok = usdt.transfer(storeWallet, o.total);
+        require(ok, "transfer failed");
+
+        emit OrderWithdrawn(orderId, storeWallet, o.total);
+    }
+
+    function refund(uint256 orderId) external {
+        Order storage o = orders[orderId];
+
+        require(o.status == Status.PAID, "order not refundable");
+        require(msg.sender == o.customer, "not customer");
+
+        o.status = Status.REFUNDED;
+
+        bool ok = usdt.transfer(o.customer, o.total);
+        require(ok, "transfer failed");
+
+        emit OrderRefunded(orderId, o.customer, o.total);
     }
 }
