@@ -126,6 +126,9 @@ npx hardhat run scripts/deployEscrow.js
 
 ## Future Work
 
-- AI-assisted escrow dispute resolution using off-chain automation  
-- Integration with oracle-based dispute signals  
-- Hybrid smart contract + off-chain decision system for conflict resolution
+-Future Work:
+- On-chain dispute resolution mechanism
+- Integration with decentralized arbitration systems
+- Frontend interface (React / Web3)
+- Deployment to public testnet (Sepolia)
+- Multi-vendor marketplace support
