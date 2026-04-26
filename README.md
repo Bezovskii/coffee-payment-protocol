@@ -126,7 +126,6 @@ npx hardhat run scripts/deployEscrow.js
 
 ## Future Work
 
--Future Work:
 - On-chain dispute resolution mechanism
 - Integration with decentralized arbitration systems
 - Frontend interface (React / Web3)
